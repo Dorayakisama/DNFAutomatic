@@ -1,5 +1,7 @@
 # DNFAutomatic
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 DNFAutomatic is a desktop automation tool for repetitive DNF rank-match operations. It uses screen capture, image recognition, and simulated mouse input to automate a fixed workflow after the user has already opened the game, configured the correct resolution, and entered the proper in-game page.
 
 This project was completely constructed by Codex using vibe coding.
@@ -130,7 +132,7 @@ The automation depends on template images stored in:
 - `resource/rank_image/`
 - `resource/sys_image/`
 
-See [resource/README.md](</d:/codes/dnfautomation/resource/README.md>) for the expected filenames and rank mappings.
+See [resource/README.md](resource/README.md) for the expected filenames and rank mappings.
 
 ## Packaging Notes
 
