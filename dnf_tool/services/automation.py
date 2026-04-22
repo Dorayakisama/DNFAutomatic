@@ -87,6 +87,17 @@ class AutomationService:
                 current_rank = vision.detect_rank(
                     threshold=MATCH_THRESHOLDS["rank"]
                 )
+                rank_retry = 0
+                while current_rank is None and rank_retry < 10 and not self._stop_event.is_set():
+                    self._logger(
+                        "No rank icon detected. Retrying rank detection "
+                        f"(attempt {rank_retry + 1}/10)..."
+                    )
+                    time.sleep(3.0)
+                    current_rank = vision.detect_rank(
+                        threshold=MATCH_THRESHOLDS["rank"]
+                    )
+                    rank_retry += 1
                 if current_rank is None:
                     self._logger(
                         "No rank icon was detected on the current screen. "
@@ -241,6 +252,7 @@ class AutomationService:
                     "Rank icon reappeared. Round finished with detected rank "
                     f"{current_rank.label}."
                 )
+                # time.sleep(1.0)  # brief pause to allow any end-of-round animations to finish
                 return True
 
             if time.monotonic() >= heartbeat_at:
