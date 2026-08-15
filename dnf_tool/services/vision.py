@@ -183,7 +183,16 @@ class ScreenVisionService:
         return loaded
 
     def _read_image(self, path: Path) -> np.ndarray | None:
-        image = cv2.imread(str(path), cv2.IMREAD_COLOR)
+        try:
+            encoded_image = np.frombuffer(path.read_bytes(), dtype=np.uint8)
+            if encoded_image.size == 0:
+                self._logger(f"Failed to load empty template image: {path}")
+                return None
+            image = cv2.imdecode(encoded_image, cv2.IMREAD_COLOR)
+        except (OSError, ValueError, cv2.error) as exc:
+            self._logger(f"Failed to load template image: {path}. Error: {exc}")
+            return None
+
         if image is None:
             self._logger(f"Failed to load template image: {path}")
             return None

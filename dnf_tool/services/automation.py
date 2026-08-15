@@ -146,6 +146,9 @@ class AutomationService:
                 if not self._wait_for_vs_icon(vision):
                     return
 
+                if not self._wait_for_vs_to_disappear(vision):
+                    return
+
                 if not self._wait_for_round_end(vision):
                     return
 
@@ -218,7 +221,7 @@ class AutomationService:
         return False
 
     def _wait_for_vs_icon(self, vision: ScreenVisionService) -> bool:
-        self._logger("Step 4: Waiting for VS icon.")
+        self._logger("Step 4: Waiting for VS loading screen.")
         heartbeat_at = time.monotonic() + 3.0
 
         while not self._stop_event.is_set():
@@ -227,7 +230,7 @@ class AutomationService:
                 threshold=MATCH_THRESHOLDS["system"],
             )
             if vs_match:
-                self._logger("VS icon detected. Match has started.")
+                self._logger("VS loading screen detected. The match is loading.")
                 return True
 
             if time.monotonic() >= heartbeat_at:
@@ -239,20 +242,45 @@ class AutomationService:
         self._logger("Automation stop requested while waiting for VS icon.")
         return False
 
+    def _wait_for_vs_to_disappear(self, vision: ScreenVisionService) -> bool:
+        self._logger("Waiting for VS loading screen to disappear.")
+        heartbeat_at = time.monotonic() + 3.0
+
+        while not self._stop_event.is_set():
+            vs_match = vision.find_system_target(
+                name="vs",
+                threshold=MATCH_THRESHOLDS["system"],
+            )
+            if vs_match is None:
+                self._logger(
+                    "VS loading screen disappeared. Waiting 10 seconds before "
+                    "entering battle state."
+                )
+                if self._stop_event.wait(10.0):
+                    break
+                self._logger("Battle state entered.")
+                return True
+
+            if time.monotonic() >= heartbeat_at:
+                self._logger("VS loading screen is still visible...")
+                heartbeat_at = time.monotonic() + 3.0
+
+            time.sleep(POLL_INTERVALS["vs"])
+
+        self._logger("Automation stop requested while waiting for VS loading to finish.")
+        return False
+
     def _wait_for_round_end(self, vision: ScreenVisionService) -> bool:
-        self._logger("Step 5: Waiting for round end until a rank icon reappears.")
+        self._logger("Step 5: Battle in progress. Waiting for Start button to reappear.")
         heartbeat_at = time.monotonic() + 2.0
 
         while not self._stop_event.is_set():
-            current_rank = vision.detect_rank(
-                threshold=MATCH_THRESHOLDS["rank"]
+            start_match = vision.find_system_target(
+                name="start",
+                threshold=MATCH_THRESHOLDS["system"],
             )
-            if current_rank:
-                self._logger(
-                    "Rank icon reappeared. Round finished with detected rank "
-                    f"{current_rank.label}."
-                )
-                # time.sleep(1.0)  # brief pause to allow any end-of-round animations to finish
+            if start_match:
+                self._logger("Start button reappeared. Round finished.")
                 return True
 
             if time.monotonic() >= heartbeat_at:
